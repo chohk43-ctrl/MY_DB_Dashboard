@@ -1,13 +1,15 @@
 import { ANOMALY_CONFIG, BADGE_CONFIG } from './config.js'
 
+const BASE = import.meta.env.BASE_URL
+
 export async function loadPerfData() {
-  const res = await fetch('./data/db_perf.json')
+  const res = await fetch(`${BASE}data/db_perf.json`)
   const json = await res.json()
   return json.data
 }
 
 export async function loadQueryData() {
-  const res = await fetch('./data/top_query.json')
+  const res = await fetch(`${BASE}data/top_query.json`)
   const json = await res.json()
   return json.weeks
 }

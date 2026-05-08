@@ -60,6 +60,27 @@ export function calcQueryBadges(weeks) {
   weeks.forEach(w => { weekMap[w.week] = w })
   const weekKeys = weeks.map(w => w.week).sort()
 
+  // 전체 주차에 걸쳐 biz_sql_id별 sql_text 목록 수집 (다이나믹 감지용)
+  const bizSqlTextMap = {}
+  weeks.forEach(w => {
+    w.queries.forEach(q => {
+      if (!bizSqlTextMap[q.biz_sql_id]) bizSqlTextMap[q.biz_sql_id] = new Set()
+      if (q.sql_text) bizSqlTextMap[q.biz_sql_id].add(normalizeSql(q.sql_text))
+    })
+  })
+
+  // 전체 주차에 걸쳐 biz_sql_id별 oracle_sql_id 이력 수집
+  const bizOracleIdHistory = {}
+  weeks.forEach(w => {
+    w.queries.forEach(q => {
+      if (!bizOracleIdHistory[q.biz_sql_id]) bizOracleIdHistory[q.biz_sql_id] = []
+      const existing = bizOracleIdHistory[q.biz_sql_id]
+      if (q.oracle_sql_id && !existing.find(h => h.oracle_sql_id === q.oracle_sql_id)) {
+        existing.push({ oracle_sql_id: q.oracle_sql_id, week: w.week, sql_text: q.sql_text })
+      }
+    })
+  })
+
   return weeks.map((weekData, wi) => {
     const prevWeekKey = weekKeys[wi - 1]
     const prevWeek = prevWeekKey ? weekMap[prevWeekKey] : null
@@ -96,11 +117,28 @@ export function calcQueryBadges(weeks) {
       // 재등장: tuned=true 인데 이번 주에 등장
       if (q.tuned) badges.push('reappear')
 
-      return { ...q, badges }
+      // 다이나믹 쿼리: 같은 biz_sql_id인데 SQL 텍스트가 2가지 이상
+      const isDynamic = (bizSqlTextMap[q.biz_sql_id]?.size || 0) > 1
+      if (isDynamic) badges.push('dynamic')
+
+      return {
+        ...q,
+        badges,
+        isDynamic,
+        oracleIdHistory: bizOracleIdHistory[q.biz_sql_id] || [],
+      }
     })
 
     return { ...weekData, queries }
   })
+}
+
+export function normalizeSql(sql) {
+  return sql
+    .replace(/\/\*[\s\S]*?\*\//g, '')   // 힌트 주석 제거
+    .replace(/\s+/g, ' ')               // 공백 정규화
+    .trim()
+    .toUpperCase()
 }
 
 export function parseBizSqlId(sqlText) {

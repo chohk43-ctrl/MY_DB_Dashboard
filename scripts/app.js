@@ -1,4 +1,4 @@
-import { loadPerfData, loadQueryData, detectAnomalies, calcQueryBadges, filterByDateRange, calcZScoreStats } from './db.js'
+import { loadPerfData, loadQueryData, detectAnomalies, calcQueryBadges, filterByDateRange, calcZScoreStats, normalizeSql } from './db.js'
 import { renderPerfChart, renderMiniRankChart } from './chart.js'
 import { saveComment, loadComments, saveTuningHistory, loadTuningHistory, setTuned, getTuned } from './supabase.js'
 
@@ -228,7 +228,12 @@ function renderQueryTable(weeksWithBadges, weekKey) {
     return `
       <tr data-bizid="${escHtml(q.biz_sql_id)}" class="${isTuned ? 'tuned' : ''}">
         <td><span class="rank-num ${rankClass}">${q.rank}</span></td>
-        <td>${escHtml(q.biz_sql_id)}</td>
+        <td>
+          <div class="biz-id-cell">
+            <span class="biz-id-text">${escHtml(q.biz_sql_id)}</span>
+            <span class="oracle-id-sub">${escHtml(q.oracle_sql_id || '—')}</span>
+          </div>
+        </td>
         <td>${q.cpu_time.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}</td>
         <td>${q.execute_cnt.toLocaleString('ko-KR')}</td>
         <td>${badgesHtml}</td>
@@ -254,6 +259,7 @@ function badgeHtml(type) {
     surge:    ['badge-surge', '급상승'],
     trend:    ['badge-trend', '상승추세'],
     reappear: ['badge-reappear', '재등장'],
+    dynamic:  ['badge-dynamic', 'DYNAMIC'],
   }
   const [cls, label] = map[type] || ['', type]
   return `<span class="badge ${cls}">${label}</span>`
@@ -267,6 +273,9 @@ function openDetail(query, allWeeks) {
   document.getElementById('detail-biz-id').textContent = query.biz_sql_id
   document.getElementById('detail-oracle-id').textContent = query.oracle_sql_id || '—'
   document.getElementById('detail-sql-text').textContent = query.sql_text || '—'
+
+  renderOracleIdHistory(query)
+  renderDynamicDiff(query)
 
   const isTuned = getTuned(query.biz_sql_id)
   const btnTuned = document.getElementById('btn-tuned')
@@ -301,6 +310,43 @@ function openDetail(query, allWeeks) {
     document.getElementById('tuning-done').checked = false
     renderTuningHistory(query.biz_sql_id)
   }
+}
+
+function renderOracleIdHistory(query) {
+  const el = document.getElementById('oracle-id-history')
+  if (!el) return
+  const history = query.oracleIdHistory || []
+  if (history.length <= 1) {
+    el.innerHTML = '<div class="oracle-history-empty">Oracle SQL_ID 변경 이력 없음</div>'
+    return
+  }
+  el.innerHTML = history.map(h => `
+    <div class="oracle-history-item">
+      <code class="oracle-id-code">${escHtml(h.oracle_sql_id)}</code>
+      <span class="oracle-history-week">${escHtml(h.week)}</span>
+    </div>
+  `).join('')
+}
+
+function renderDynamicDiff(query) {
+  const el = document.getElementById('dynamic-diff-panel')
+  if (!el) return
+  if (!query.isDynamic) {
+    el.style.display = 'none'
+    return
+  }
+  el.style.display = 'block'
+  const history = query.oracleIdHistory || []
+  const variants = history.map((h, i) => `
+    <div class="dynamic-variant">
+      <div class="dynamic-variant-header">
+        <code>${escHtml(h.oracle_sql_id)}</code>
+        <span class="oracle-history-week">${escHtml(h.week)}</span>
+      </div>
+      <pre class="sql-text sql-variant">${escHtml(h.sql_text || '—')}</pre>
+    </div>
+  `).join('')
+  document.getElementById('dynamic-variants').innerHTML = variants
 }
 
 function renderTuningHistory(bizId) {

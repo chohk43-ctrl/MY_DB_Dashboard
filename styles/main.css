@@ -792,3 +792,87 @@ html, body {
 ::-webkit-scrollbar-track { background: var(--bg-base); }
 ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ===== 업무용/Oracle SQL_ID 셀 ===== */
+.biz-id-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.biz-id-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+.oracle-id-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ===== DYNAMIC 배지 ===== */
+.badge-dynamic {
+  background: rgba(167, 139, 250, 0.15);
+  color: var(--purple);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+}
+
+/* ===== Oracle SQL_ID 이력 패널 ===== */
+.detail-oracle-history {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.oracle-id-history-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.oracle-history-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+}
+.oracle-id-code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+}
+.oracle-history-week {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.oracle-history-empty {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 0;
+}
+
+/* ===== 다이나믹 쿼리 diff 패널 ===== */
+.dynamic-diff-panel {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(167, 139, 250, 0.04);
+}
+.dynamic-variant {
+  margin-top: 8px;
+}
+.dynamic-variant-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.sql-variant {
+  font-size: 10px;
+  max-height: 100px;
+  overflow-y: auto;
+  background: var(--bg-base);
+  border-left: 2px solid var(--purple);
+}

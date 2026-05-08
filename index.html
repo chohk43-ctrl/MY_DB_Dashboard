@@ -188,6 +188,7 @@
                 <span class="badge badge-surge">급상승</span>
                 <span class="badge badge-trend">상승추세</span>
                 <span class="badge badge-reappear">재등장</span>
+                <span class="badge badge-dynamic">DYNAMIC</span>
               </div>
             </div>
             <div class="table-wrapper">
@@ -195,10 +196,10 @@
                 <thead>
                   <tr>
                     <th style="width:60px">순위</th>
-                    <th>업무용 SQL_ID</th>
+                    <th>업무용 SQL_ID / Oracle SQL_ID</th>
                     <th style="width:120px">CPU Time(s)</th>
                     <th style="width:100px">실행횟수</th>
-                    <th style="width:120px">배지</th>
+                    <th style="width:140px">배지</th>
                   </tr>
                 </thead>
                 <tbody id="query-tbody">
@@ -223,9 +224,24 @@
                 <button class="btn-tuned" id="btn-tuned">튜닝 완료 처리</button>
               </div>
 
+              <!-- Oracle SQL_ID 이력 패널 -->
+              <div class="detail-oracle-history">
+                <div class="detail-section-label">Oracle SQL_ID 변경 이력</div>
+                <div class="oracle-id-history-list" id="oracle-id-history"></div>
+              </div>
+
               <div class="detail-sql">
                 <div class="detail-section-label">SQL TEXT</div>
                 <pre class="sql-text" id="detail-sql-text"></pre>
+              </div>
+
+              <!-- 다이나믹 쿼리 변형 패널 -->
+              <div class="dynamic-diff-panel" id="dynamic-diff-panel" style="display:none">
+                <div class="detail-section-label">
+                  <span class="badge badge-dynamic">DYNAMIC</span>
+                  SQL 변형 이력 (같은 업무용 SQL_ID, 다른 쿼리)
+                </div>
+                <div id="dynamic-variants"></div>
               </div>
 
               <div class="detail-mini-chart-wrap">

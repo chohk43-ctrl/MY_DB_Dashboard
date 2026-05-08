@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AMC DB Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/MY_DB_Dashboard/assets/index-BFI8GdRr.js"></script>
+  <link rel="stylesheet" crossorigin href="/MY_DB_Dashboard/assets/index-WP9gWvYN.css">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo-mark"></div>
+        <div class="header-title">
+          <span class="title-main">AMC DB Dashboard</span>
+          <span class="title-sub">Oracle Performance Monitor</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <span class="status-text">LIVE</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tab Navigation -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="perf">
+        <span class="tab-icon">◈</span>
+        성능 모니터링
+      </button>
+      <button class="tab-btn" data-tab="query">
+        <span class="tab-icon">◉</span>
+        TOP 쿼리 관리
+      </button>
+      <div class="tab-indicator"></div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- 성능 모니터링 탭 -->
+      <section id="tab-perf" class="tab-panel active">
+        <!-- 날짜 필터 -->
+        <div class="filter-bar">
+          <label class="filter-label">기간</label>
+          <input type="date" id="date-from" class="date-input" />
+          <span class="filter-sep">~</span>
+          <input type="date" id="date-to" class="date-input" />
+          <button id="btn-apply-filter" class="btn-apply">적용</button>
+          <button id="btn-reset-filter" class="btn-reset">전체</button>
+        </div>
+
+        <!-- 요약 카드 -->
+        <div class="metric-cards" id="metric-cards">
+          <div class="metric-card" data-metric="db_time">
+            <div class="metric-label">DB Time</div>
+            <div class="metric-value" id="card-db-time">—</div>
+            <div class="metric-unit">seconds</div>
+          </div>
+          <div class="metric-card" data-metric="cpu_time">
+            <div class="metric-label">CPU Time</div>
+            <div class="metric-value" id="card-cpu-time">—</div>
+            <div class="metric-unit">seconds</div>
+          </div>
+          <div class="metric-card" data-metric="logical_read">
+            <div class="metric-label">Logical Read</div>
+            <div class="metric-value" id="card-logical-read">—</div>
+            <div class="metric-unit">백만</div>
+          </div>
+          <div class="metric-card" data-metric="execute_cnt">
+            <div class="metric-label">Execute Cnt</div>
+            <div class="metric-value" id="card-execute-cnt">—</div>
+            <div class="metric-unit">백만</div>
+          </div>
+          <div class="metric-card" data-metric="was_count">
+            <div class="metric-label">WAS Count</div>
+            <div class="metric-value" id="card-was-count">—</div>
+            <div class="metric-unit">sessions</div>
+          </div>
+          <div class="metric-card" data-metric="patient_count">
+            <div class="metric-label">환자수</div>
+            <div class="metric-value" id="card-patient-count">—</div>
+            <div class="metric-unit">명</div>
+          </div>
+        </div>
+
+        <!-- 차트 영역 -->
+        <div class="chart-section">
+          <div class="section-header">
+            <h2 class="section-title">CPU 성능 추이</h2>
+            <div class="chart-legend">
+              <span class="legend-item cpu">CPU Time</span>
+              <span class="legend-item was">WAS Count</span>
+              <span class="legend-item patient">환자수</span>
+              <span class="legend-item anomaly">● 이상감지</span>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="perf-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- 상관관계 요약 패널 -->
+        <div class="correlation-panel" id="correlation-panel">
+          <div class="corr-item">
+            <div class="corr-label">CPU / WAS 평균 비율</div>
+            <div class="corr-value" id="corr-cpu-was">—</div>
+            <div class="corr-sub">CPU Time ÷ WAS Count</div>
+          </div>
+          <div class="corr-item">
+            <div class="corr-label">CPU / 환자수 평균 비율</div>
+            <div class="corr-value" id="corr-cpu-pat">—</div>
+            <div class="corr-sub">CPU Time ÷ 환자수</div>
+          </div>
+          <div class="corr-item">
+            <div class="corr-label">WAS-CPU 상관계수</div>
+            <div class="corr-value" id="corr-r-was">—</div>
+            <div class="corr-sub">Pearson r (1에 가까울수록 비례)</div>
+          </div>
+          <div class="corr-item">
+            <div class="corr-label">환자수-CPU 상관계수</div>
+            <div class="corr-value" id="corr-r-pat">—</div>
+            <div class="corr-sub">Pearson r (1에 가까울수록 비례)</div>
+          </div>
+          <div class="corr-item corr-wide">
+            <div class="corr-label">이상 감지 기준 (Z &gt; 2.0)</div>
+            <div class="corr-formula">
+              <span class="formula-tag">CPU Z</span> = (CPU − <span id="f-cpu-mean">μ</span>) ÷ <span id="f-cpu-std">σ</span>
+              &nbsp;│&nbsp;
+              <span class="formula-tag">WAS비율 Z</span> = (CPU/WAS − <span id="f-was-mean">μ</span>) ÷ <span id="f-was-std">σ</span>
+              &nbsp;│&nbsp;
+              <span class="formula-tag">환자비율 Z</span> = (CPU/환자 − <span id="f-pat-mean">μ</span>) ÷ <span id="f-pat-std">σ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 이상 감지 목록 -->
+        <div class="anomaly-section">
+          <div class="section-header">
+            <h2 class="section-title">
+              이상 감지 목록
+              <span class="anomaly-count" id="anomaly-count">0</span>
+            </h2>
+            <div class="threshold-info">Z-score 임계값: <span id="threshold-display">2.0</span></div>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table" id="anomaly-table">
+              <thead>
+                <tr>
+                  <th>날짜</th>
+                  <th>CPU Z-score</th>
+                  <th>CPU/WAS Z</th>
+                  <th>CPU/환자수 Z</th>
+                  <th>Comment</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="anomaly-tbody">
+                <tr class="empty-row">
+                  <td colspan="6">데이터를 로드하는 중...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TOP 쿼리 관리 탭 -->
+      <section id="tab-query" class="tab-panel">
+        <div class="filter-bar">
+          <label class="filter-label">주차</label>
+          <select id="week-select" class="week-select">
+            <option value="">주차 선택</option>
+          </select>
+        </div>
+
+        <div class="query-layout">
+          <!-- 쿼리 목록 -->
+          <div class="query-list-section">
+            <div class="section-header">
+              <h2 class="section-title">TOP 100 쿼리</h2>
+              <div class="badge-legend">
+                <span class="badge badge-new">NEW</span>
+                <span class="badge badge-surge">급상승</span>
+                <span class="badge badge-trend">상승추세</span>
+                <span class="badge badge-reappear">재등장</span>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table query-table" id="query-table">
+                <thead>
+                  <tr>
+                    <th style="width:60px">순위</th>
+                    <th>업무용 SQL_ID</th>
+                    <th style="width:120px">CPU Time(s)</th>
+                    <th style="width:100px">실행횟수</th>
+                    <th style="width:120px">배지</th>
+                  </tr>
+                </thead>
+                <tbody id="query-tbody">
+                  <tr class="empty-row">
+                    <td colspan="5">주차를 선택하세요</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 쿼리 상세 패널 -->
+          <div class="query-detail-panel" id="query-detail-panel">
+            <div class="detail-empty" id="detail-empty">
+              <div class="detail-empty-icon">◈</div>
+              <p>쿼리를 클릭하면 상세 정보가 표시됩니다</p>
+            </div>
+            <div class="detail-content" id="detail-content" style="display:none">
+              <div class="detail-header">
+                <h3 class="detail-biz-id" id="detail-biz-id"></h3>
+                <div class="detail-oracle-id">Oracle SQL_ID: <code id="detail-oracle-id"></code></div>
+                <button class="btn-tuned" id="btn-tuned">튜닝 완료 처리</button>
+              </div>
+
+              <div class="detail-sql">
+                <div class="detail-section-label">SQL TEXT</div>
+                <pre class="sql-text" id="detail-sql-text"></pre>
+              </div>
+
+              <div class="detail-mini-chart-wrap">
+                <div class="detail-section-label">순위 추이</div>
+                <canvas id="mini-rank-chart" height="80"></canvas>
+              </div>
+
+              <div class="detail-tuning">
+                <div class="detail-section-label">튜닝 이력</div>
+                <div class="tuning-history-list" id="tuning-history-list"></div>
+                <div class="tuning-add-form">
+                  <input type="date" id="tuning-date" class="date-input" />
+                  <input type="text" id="tuning-note" class="tuning-note-input" placeholder="튜닝 내용 입력" />
+                  <label class="tuning-done-label">
+                    <input type="checkbox" id="tuning-done" />
+                    완료
+                  </label>
+                  <button class="btn-add-tuning" id="btn-add-tuning">추가</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+</body>
+</html>
